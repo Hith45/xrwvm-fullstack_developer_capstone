@@ -14,4 +14,8 @@ urlpatterns = [
         name='get_dealer_reviews'
     ),
     path('getalldealers', views.getalldealers, name='getalldealers'),
+    path(
+        'getdealer/<int:dealer_id>', 
+        views.getdealerbyid, 
+        name='getdealerbyid'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

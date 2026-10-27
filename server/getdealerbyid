@@ -1,0 +1,2 @@
+$ curl -s http://127.0.0.1:8000/djangoapp/getdealer/15
+{"_id": "6ae0bc30a04dc54249854a8e", "id": 15, "city": "San Antonio", "state": "Texas", "address": "5057 Pankratz Hill", "zip": "78225", "lat": "29.3875", "long": "-98.5245", "short_name": "Tempsoft", "full_name": "Tempsoft Car Dealership", "__v": 0}

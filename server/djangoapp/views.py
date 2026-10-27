@@ -99,3 +99,20 @@ def getalldealers(request):
             {"error": "Could not retrieve dealerships"},
             status=502
         )
+@csrf_exempt
+def getdealerbyid(request, dealer_id):
+    import requests
+
+    try:
+        response = requests.get(
+            f"http://127.0.0.1:3030/fetchDealer/{dealer_id}",
+            timeout=10
+        )
+        if response.status_code == 404:
+            return JsonResponse({"error": "Dealer not found"}, status=404)
+
+        response.raise_for_status()
+        return JsonResponse(response.json(), safe=False)
+    except requests.RequestException as error:
+        logger.error("Failed to retrieve dealer: %s", error)
+        return JsonResponse({"error": "Could not retrieve dealer"}, status=502)
