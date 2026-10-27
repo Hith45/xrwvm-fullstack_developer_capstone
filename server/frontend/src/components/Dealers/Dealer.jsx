@@ -1,93 +1,114 @@
-import React, { useState,useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
 import "./Dealers.css";
 import "../assets/style.css";
-import positive_icon from "../assets/positive.png"
-import neutral_icon from "../assets/neutral.png"
-import negative_icon from "../assets/negative.png"
-import review_icon from "../assets/reviewbutton.png"
-import Header from '../Header/Header';
+import Header from "../Header/Header";
+import reviewIcon from "../assets/reviewicon.png";
 
-const Dealer = () => {
-
-
-  const [dealer, setDealer] = useState({});
-  const [reviews, setReviews] = useState([]);
-  const [unreviewed, setUnreviewed] = useState(false);
-  const [postReview, setPostReview] = useState(<></>)
-
-  let curr_url = window.location.href;
-  let root_url = curr_url.substring(0,curr_url.indexOf("dealer"));
-  let params = useParams();
-  let id =params.id;
-  let dealer_url = root_url+`djangoapp/dealer/${id}`;
-  let reviews_url = root_url+`djangoapp/reviews/dealer/${id}`;
-  let post_review = root_url+`postreview/${id}`;
-  
-  const get_dealer = async ()=>{
-    const res = await fetch(dealer_url, {
-      method: "GET"
-    });
-    const retobj = await res.json();
-    
-    if(retobj.status === 200) {
-      let dealerobjs = Array.from(retobj.dealer)
-      setDealer(dealerobjs[0])
-    }
-  }
-
-  const get_reviews = async ()=>{
-    const res = await fetch(reviews_url, {
-      method: "GET"
-    });
-    const retobj = await res.json();
-    
-    if(retobj.status === 200) {
-      if(retobj.reviews.length > 0){
-        setReviews(retobj.reviews)
-      } else {
-        setUnreviewed(true);
-      }
-    }
-  }
-
-  const senti_icon = (sentiment)=>{
-    let icon = sentiment === "positive"?positive_icon:sentiment==="negative"?negative_icon:neutral_icon;
-    return icon;
-  }
+const Dealers = () => {
+  const [dealers, setDealers] = useState([]);
+  const [states, setStates] = useState([]);
+  const [selectedState, setSelectedState] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    get_dealer();
-    get_reviews();
-    if(sessionStorage.getItem("username")) {
-      setPostReview(<a href={post_review}><img src={review_icon} style={{width:'10%',marginLeft:'10px',marginTop:'10px'}} alt='Post Review'/></a>)
+    fetch("/djangoapp/getalldealers")
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not load dealerships");
+        return response.json();
+      })
+      .then((data) => {
+        setDealers(Array.isArray(data) ? data : []);
+        setStates([
+          ...new Set((Array.isArray(data) ? data : []).map((d) => d.state)),
+        ].sort());
+      })
+      .catch((err) => setError(err.message));
+  }, []);
 
-      
+  const filterDealers = async (state) => {
+    setSelectedState(state);
+    setError("");
+
+    try {
+      const url = state
+        ? `/djangoapp/getdealers/${encodeURIComponent(state)}`
+        : "/djangoapp/getalldealers";
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Could not filter dealerships");
+
+      const data = await response.json();
+      setDealers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message);
     }
-  },[]);  
+  };
 
+  const loggedIn = Boolean(sessionStorage.getItem("username"));
 
-return(
-  <div style={{margin:"20px"}}>
-      <Header/>
-      <div style={{marginTop:"10px"}}>
-      <h1 style={{color:"grey"}}>{dealer.full_name}{postReview}</h1>
-      <h4  style={{color:"grey"}}>{dealer['city']},{dealer['address']}, Zip - {dealer['zip']}, {dealer['state']} </h4>
-      </div>
-      <div class="reviews_panel">
-      {reviews.length === 0 && unreviewed === false ? (
-        <text>Loading Reviews....</text>
-      ):  unreviewed === true? <div>No reviews yet! </div> :
-      reviews.map(review => (
-        <div className='review_panel'>
-          <img src={senti_icon(review.sentiment)} className="emotion_icon" alt='Sentiment'/>
-          <div className='review'>{review.review}</div>
-          <div className="reviewer">{review.name} {review.car_make} {review.car_model} {review.car_year}</div>
+  return (
+    <div>
+      <Header />
+      <main className="container mt-4">
+        <h2>Our Dealerships</h2>
+
+        <label htmlFor="state">Filter by state: </label>
+        <select
+          id="state"
+          value={selectedState}
+          onChange={(e) => filterDealers(e.target.value)}
+        >
+          <option value="">All States</option>
+          {states.map((state) => (
+            <option key={state} value={state}>{state}</option>
+          ))}
+        </select>
+
+        {error && <p role="alert">{error}</p>}
+
+        <div className="table-responsive mt-3">
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Dealer Name</th>
+                <th>City</th>
+                <th>Address</th>
+                <th>Zip</th>
+                <th>State</th>
+                {loggedIn && <th>Review Dealer</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {dealers.map((dealer) => (
+                <tr key={dealer.id}>
+                  <td>{dealer.id}</td>
+                  <td>
+                    <a href={`/dealer/${dealer.id}`}>{dealer.full_name}</a>
+                  </td>
+                  <td>{dealer.city}</td>
+                  <td>{dealer.address}</td>
+                  <td>{dealer.zip}</td>
+                  <td>{dealer.state}</td>
+                  {loggedIn && (
+                    <td>
+                      <a href={`/postreview/${dealer.id}`}>
+                        <img
+                          src={reviewIcon}
+                          className="review_icon"
+                          alt="Review Dealer"
+                        />
+                      </a>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
-    </div>  
-  </div>
-)
-}
+      </main>
+    </div>
+  );
+};
 
-export default Dealer
+export default Dealers;
