@@ -7,7 +7,7 @@
 # from django.contrib.auth import logout
 # from django.contrib import messages
 # from datetime import datetime
-
+import requests
 from django.http import JsonResponse
 from django.contrib.auth import login, authenticate, logout
 import logging
@@ -67,3 +67,18 @@ def login_user(request):
 # Create a `add_review` view to submit a review
 # def add_review(request):
 # ...
+def get_dealer_reviews(request, dealer_id):
+    backend_url = "http://127.0.0.1:3030"
+    try:
+        response = requests.get(
+            f"{backend_url}/fetchReviews/dealer/{dealer_id}",
+            timeout=10
+        )
+        response.raise_for_status()
+        return JsonResponse(response.json(), safe=False)
+    except requests.RequestException as error:
+        logger.error("Failed to retrieve dealer reviews: %s", error)
+        return JsonResponse(
+            {"error": "Could not retrieve dealer reviews"},
+            status=502
+        )
