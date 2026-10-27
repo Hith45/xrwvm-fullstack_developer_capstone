@@ -133,3 +133,18 @@ def getdealersbystate(request, state):
             {"error": "Could not retrieve dealerships"},
             status=502
         )
+@csrf_exempt
+def getallcarmakes(request):
+    try:
+        response = requests.get(
+            "http://127.0.0.1:3030/fetchCarMakes",
+            timeout=10
+        )
+        response.raise_for_status()
+        return JsonResponse(response.json(), safe=False)
+    except requests.RequestException as error:
+        logger.error("Failed to retrieve car makes: %s", error)
+        return JsonResponse(
+            {"error": "Could not retrieve car makes"},
+            status=502
+        )

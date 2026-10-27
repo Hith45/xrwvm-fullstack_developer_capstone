@@ -1,0 +1,12 @@
+$ curl -i http://127.0.0.1:8000/djangoapp/getallcarmakes
+HTTP/1.1 200 OK
+Date: Tue, 27 Oct 2026 20:19:41 GMT
+Server: WSGIServer/0.2 CPython/3.14.6
+Content-Type: application/json
+X-Frame-Options: DENY
+Content-Length: 681
+X-Content-Type-Options: nosniff
+Referrer-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin
+
+[{"make": "Nissan", "models": ["Pathfinder", "Rogue", "Altima", "Maxima", "Murano", "370Z", "Versa", "Armada", "Sentra", "Juke", "Cube"]}, {"make": "Kia", "models": ["Seltos", "Telluride", "Sportage", "Cadenza", "Optima", "Rio", "Stinger", "Niro", "Soul", "Forte"]}, {"make": "Audi", "models": ["A4", "Q5", "A3", "Q7", "S5", "TT", "A5", "Q3", "S7", "Q8", "A6", "S3"]}, {"make": "Mercedes", "models": ["GLE", "C-Class", "E-Class", "GLC", "S-Class", "CLA", "GLA", "GLE Coupe", "GLB", "A-Class", "GLS", "AMG GT", "M-Class"]}, {"make": "Toyota", "models": ["Camry", "Highlander", "RAV4", "Corolla", "Sienna", "Tacoma", "Prius", "Avalon", "4Runner", "Tundra", "Yaris", "Land Cruiser"]}]

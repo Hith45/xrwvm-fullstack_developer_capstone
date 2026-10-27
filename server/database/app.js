@@ -125,6 +125,27 @@ app.post('/insert_review', express.raw({ type: '*/*' }), async (req, res) => {
 });
 
 // Start the Express server
+app.get('/fetchCarMakes', async (req, res) => {
+  try {
+    const cars = JSON.parse(
+      fs.readFileSync('data/car_records.json', 'utf8')
+    ).cars;
+
+    const makes = [...new Set(cars.map(car => car.make))];
+
+    const result = makes.map(make => ({
+      make,
+      models: [...new Set(
+        cars.filter(car => car.make === make).map(car => car.model)
+      )]
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching car makes:', error);
+    res.status(500).json({ error: 'Error fetching car makes' });
+  }
+});
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
