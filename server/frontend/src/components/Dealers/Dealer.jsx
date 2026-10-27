@@ -1,114 +1,84 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import Header from "../Header/Header";
 import "./Dealers.css";
 import "../assets/style.css";
-import Header from "../Header/Header";
-import reviewIcon from "../assets/reviewicon.png";
+import positiveIcon from "../assets/positive.png";
+import negativeIcon from "../assets/negative.png";
+import neutralIcon from "../assets/neutral.png";
 
-const Dealers = () => {
-  const [dealers, setDealers] = useState([]);
-  const [states, setStates] = useState([]);
-  const [selectedState, setSelectedState] = useState("");
+const Dealer = () => {
+  const { id } = useParams();
+  const [dealer, setDealer] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/djangoapp/getalldealers")
-      .then((response) => {
-        if (!response.ok) throw new Error("Could not load dealerships");
-        return response.json();
-      })
-      .then((data) => {
-        setDealers(Array.isArray(data) ? data : []);
-        setStates([
-          ...new Set((Array.isArray(data) ? data : []).map((d) => d.state)),
-        ].sort());
+    Promise.all([
+      fetch(`/djangoapp/getdealer/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Dealer not found");
+        return r.json();
+      }),
+      fetch(`/djangoapp/get_dealer_reviews/${id}`).then((r) => {
+        if (!r.ok) throw new Error("Could not load reviews");
+        return r.json();
+      }),
+    ])
+      .then(([dealerData, reviewData]) => {
+        setDealer(dealerData);
+        setReviews(Array.isArray(reviewData) ? reviewData : []);
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }, [id]);
 
-  const filterDealers = async (state) => {
-    setSelectedState(state);
-    setError("");
-
-    try {
-      const url = state
-        ? `/djangoapp/getdealers/${encodeURIComponent(state)}`
-        : "/djangoapp/getalldealers";
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Could not filter dealerships");
-
-      const data = await response.json();
-      setDealers(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(err.message);
-    }
+  const sentimentIcon = (sentiment) => {
+    if (sentiment === "positive") return positiveIcon;
+    if (sentiment === "negative") return negativeIcon;
+    return neutralIcon;
   };
-
-  const loggedIn = Boolean(sessionStorage.getItem("username"));
 
   return (
     <div>
       <Header />
       <main className="container mt-4">
-        <h2>Our Dealerships</h2>
-
-        <label htmlFor="state">Filter by state: </label>
-        <select
-          id="state"
-          value={selectedState}
-          onChange={(e) => filterDealers(e.target.value)}
-        >
-          <option value="">All States</option>
-          {states.map((state) => (
-            <option key={state} value={state}>{state}</option>
-          ))}
-        </select>
-
         {error && <p role="alert">{error}</p>}
 
-        <div className="table-responsive mt-3">
-          <table className="table table-striped">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Dealer Name</th>
-                <th>City</th>
-                <th>Address</th>
-                <th>Zip</th>
-                <th>State</th>
-                {loggedIn && <th>Review Dealer</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {dealers.map((dealer) => (
-                <tr key={dealer.id}>
-                  <td>{dealer.id}</td>
-                  <td>
-                    <a href={`/dealer/${dealer.id}`}>{dealer.full_name}</a>
-                  </td>
-                  <td>{dealer.city}</td>
-                  <td>{dealer.address}</td>
-                  <td>{dealer.zip}</td>
-                  <td>{dealer.state}</td>
-                  {loggedIn && (
-                    <td>
-                      <a href={`/postreview/${dealer.id}`}>
-                        <img
-                          src={reviewIcon}
-                          className="review_icon"
-                          alt="Review Dealer"
-                        />
-                      </a>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {dealer && (
+          <>
+            <h2>{dealer.full_name}</h2>
+            <p>
+              {dealer.city}, {dealer.address}, Zip - {dealer.zip},{" "}
+              {dealer.state}
+            </p>
+
+            {sessionStorage.getItem("username") && (
+              <a href={`/postreview/${id}`}>Review Dealer</a>
+            )}
+
+            <h3 className="mt-4">Customer Reviews</h3>
+            {reviews.length === 0 ? (
+              <p>No reviews yet.</p>
+            ) : (
+              reviews.map((review) => (
+                <div className="review_panel mb-3" key={review.id}>
+                  <img
+                    src={sentimentIcon(review.sentiment)}
+                    className="emotion_icon"
+                    alt={review.sentiment || "Sentiment not analyzed"}
+                  />
+                  <div className="review">{review.review}</div>
+                  <div className="reviewer">
+                    {review.name} {review.car_make} {review.car_model}{" "}
+                    {review.car_year}
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
       </main>
     </div>
   );
 };
 
-export default Dealers;
+export default Dealer;
