@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact Us | Cars Dealership</title>
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .contact-container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 25px;
+    }
+    .contact-content {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+    }
+    .contact-content img {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      border-radius: 8px;
+    }
+    .contact-details {
+      flex: 1;
+      min-width: 260px;
+      line-height: 1.9;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light"
+       style="background-color: darkturquoise;">
+    <div class="container-fluid">
+      <h2 class="me-4">Cars Dealerships</h2>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+        data-bs-target="#navbarText" aria-controls="navbarText"
+        aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarText">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="/about">About Us</a></li>
+          <li class="nav-item"><a class="nav-link active"
+            aria-current="page" href="/contact">Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="card contact-container">
+    <header class="text-center mb-4">
+      <h1>Contact Us</h1>
+      <p>We're here to help with your car-buying and dealership questions.</p>
+    </header>
+
+    <section class="contact-content">
+      <img src="/static/contactus.png" alt="Contact our dealership team">
+
+      <div class="contact-details">
+        <h2>Cars Dealership Customer Support</h2>
+        <p><strong>Address:</strong> 123 Automotive Drive, Chicago, IL 60601, USA</p>
+        <p><strong>Phone:</strong> +1 312-555-0142</p>
+        <p><strong>Email:</strong>
+          <a href="mailto:support@example.com">support@example.com</a>
+        </p>
+        <p><strong>Business hours:</strong><br>
+          Monday–Friday: 9:00 AM–6:00 PM<br>
+          Saturday: 10:00 AM–4:00 PM<br>
+          Sunday: Closed
+        </p>
+        <p>Contact our team for dealership information, vehicle availability,
+          customer reviews, or assistance using our website.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
