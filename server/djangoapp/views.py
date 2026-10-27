@@ -1,150 +1,210 @@
-# Uncomment the required imports before adding the code
-
-# from django.shortcuts import render
-# from django.http import HttpResponseRedirect, HttpResponse
-# from django.contrib.auth.models import User
-# from django.shortcuts import get_object_or_404, render, redirect
-# from django.contrib.auth import logout
-# from django.contrib import messages
-# from datetime import datetime
-import requests
-from django.http import JsonResponse
-from django.contrib.auth import login, authenticate, logout
-import logging
 import json
-from django.views.decorators.csrf import csrf_exempt
-# from .populate import initiate
+import logging
+import os
+from urllib.parse import quote
 
-@csrf_exempt
-def logout_request(request):
-    logout(request)
-    return JsonResponse({"status": "Logged out"})
-# Get an instance of a logger
+import requests
+from django.conf import settings
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
+BACKEND_URL = os.getenv("backend_url", "http://127.0.0.1:3030").rstrip("/")
+SENTIMENT_URL = os.getenv(
+    "sentiment_analyzer_url", "http://127.0.0.1:5050"
+).rstrip("/")
 
-# Create your views here.
 
-# Create a `login_request` view to handle sign in request
+def read_json(request):
+    try:
+        return json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+
+def backend_get(path):
+    try:
+        response = requests.get(f"{BACKEND_URL}{path}", timeout=15)
+        return JsonResponse(
+            response.json(),
+            status=response.status_code,
+            safe=not isinstance(response.json(), list),
+        )
+    except (requests.RequestException, ValueError) as error:
+        logger.exception("Backend GET failed: %s", error)
+        return JsonResponse(
+            {"error": "Backend service unavailable"}, status=502
+        )
+
+
 @csrf_exempt
 def login_user(request):
-    # Get username and password from request.POST dictionary
-    data = json.loads(request.body)
-    username = data['userName']
-    password = data['password']
-    # Try to check if provide credential can be authenticated
-    user = authenticate(username=username, password=password)
-    data = {"userName": username}
-    if user is not None:
-        # If user is valid, call login method to login current user
-        login(request, user)
-        data = {"userName": username, "status": "Authenticated"}
-    return JsonResponse(data)
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
 
-# Create a `logout_request` view to handle sign out request
-# def logout_request(request):
-# ...
+    data = read_json(request)
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-# Create a `registration` view to handle sign up request
-# @csrf_exempt
-# def registration(request):
-# ...
+    username = data.get("userName") or data.get("username")
+    password = data.get("password")
 
-# # Update the `get_dealerships` view to render the index page with
-# a list of dealerships
-# def get_dealerships(request):
-# ...
-
-# Create a `get_dealer_reviews` view to render the reviews of a dealer
-# def get_dealer_reviews(request,dealer_id):
-# ...
-
-# Create a `get_dealer_details` view to render the dealer details
-# def get_dealer_details(request, dealer_id):
-# ...
-
-# Create a `add_review` view to submit a review
-# def add_review(request):
-# ...
-def get_dealer_reviews(request, dealer_id):
-    backend_url = "http://127.0.0.1:3030"
-    try:
-        response = requests.get(
-            f"{backend_url}/fetchReviews/dealer/{dealer_id}",
-            timeout=10
-        )
-        response.raise_for_status()
-        return JsonResponse(response.json(), safe=False)
-    except requests.RequestException as error:
-        logger.error("Failed to retrieve dealer reviews: %s", error)
+    if not username or not password:
         return JsonResponse(
-            {"error": "Could not retrieve dealer reviews"},
-            status=502
+            {"error": "Username and password are required"}, status=400
         )
+
+    user = authenticate(request, username=username, password=password)
+    if user is None:
+        return JsonResponse({"error": "Invalid credentials"}, status=401)
+
+    login(request, user)
+    return JsonResponse({
+        "userName": user.username,
+        "status": "Authenticated",
+    })
+
+
+@csrf_exempt
+def logout_request(request):
+    if request.method not in ("POST", "GET"):
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    logout(request)
+    return JsonResponse({"status": "Logged out"})
+
+
+@csrf_exempt
+def registration(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    data = read_json(request)
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    username = (data.get("userName") or data.get("username") or "").strip()
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+
+    if not all([username, first_name, last_name, email, password]):
+        return JsonResponse(
+            {"error": "All five fields are required"}, status=400
+        )
+
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({"error": "Username already exists"}, status=409)
+
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({"error": "Email already exists"}, status=409)
+
+    user = User.objects.create_user(
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        password=password,
+    )
+
+    return JsonResponse(
+        {"status": "Registered", "userName": user.username},
+        status=201,
+    )
+
+
 @csrf_exempt
 def getalldealers(request):
-    import requests
+    return backend_get("/fetchDealers")
 
-    try:
-        response = requests.get(
-            "http://127.0.0.1:3030/fetchDealers",
-            timeout=10
-        )
-        response.raise_for_status()
-        return JsonResponse(response.json(), safe=False)
-    except requests.RequestException as error:
-        logger.error("Failed to retrieve dealerships: %s", error)
-        return JsonResponse(
-            {"error": "Could not retrieve dealerships"},
-            status=502
-        )
+
+@csrf_exempt
+def get_dealerships(request):
+    # Alias used by the frontend.
+    return backend_get("/fetchDealers")
+
+
 @csrf_exempt
 def getdealerbyid(request, dealer_id):
-    import requests
+    return backend_get(f"/fetchDealer/{dealer_id}")
 
-    try:
-        response = requests.get(
-            f"http://127.0.0.1:3030/fetchDealer/{dealer_id}",
-            timeout=10
-        )
-        if response.status_code == 404:
-            return JsonResponse({"error": "Dealer not found"}, status=404)
 
-        response.raise_for_status()
-        return JsonResponse(response.json(), safe=False)
-    except requests.RequestException as error:
-        logger.error("Failed to retrieve dealer: %s", error)
-        return JsonResponse({"error": "Could not retrieve dealer"}, status=502)
 @csrf_exempt
 def getdealersbystate(request, state):
-    import requests
+    return backend_get(f"/fetchDealers/{quote(state)}")
+
+
+@csrf_exempt
+def get_dealer_reviews(request, dealer_id):
+    return backend_get(f"/fetchReviews/dealer/{dealer_id}")
+
+
+@csrf_exempt
+def getallcarmakes(request):
+    return backend_get("/fetchCarMakes")
+
+
+@csrf_exempt
+def analyze_review(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    data = read_json(request)
+    if not isinstance(data, dict) or not data.get("review"):
+        return JsonResponse({"error": "Review text is required"}, status=400)
 
     try:
         response = requests.get(
-            f"http://127.0.0.1:3030/fetchDealers/{state}",
-            timeout=10
+            f"{SENTIMENT_URL}/analyze/{quote(str(data['review']), safe='')}",
+            timeout=15,
         )
         response.raise_for_status()
-        return JsonResponse(response.json(), safe=False)
-    except requests.RequestException as error:
-        logger.error("Failed to retrieve dealerships by state: %s", error)
+        return JsonResponse(response.json())
+    except (requests.RequestException, ValueError) as error:
+        logger.exception("Sentiment service failed: %s", error)
         return JsonResponse(
-            {"error": "Could not retrieve dealerships"},
-            status=502
+            {"error": "Sentiment service unavailable"}, status=502
         )
+
+
 @csrf_exempt
-def getallcarmakes(request):
-    try:
-        response = requests.get(
-            "http://127.0.0.1:3030/fetchCarMakes",
-            timeout=10
-        )
-        response.raise_for_status()
-        return JsonResponse(response.json(), safe=False)
-    except requests.RequestException as error:
-        logger.error("Failed to retrieve car makes: %s", error)
+def add_review(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    data = read_json(request)
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    required = ("name", "dealership", "review")
+    if any(not data.get(field) for field in required):
         return JsonResponse(
-            {"error": "Could not retrieve car makes"},
-            status=502
+            {"error": "Name, dealership and review are required"},
+            status=400,
+        )
+
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/insert_review",
+            json=data,
+            timeout=15,
+        )
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {"error": "Invalid response from review service"}
+
+        return JsonResponse(
+            payload,
+            status=response.status_code,
+            safe=not isinstance(payload, list),
+        )
+    except requests.RequestException as error:
+        logger.exception("Review submission failed: %s", error)
+        return JsonResponse(
+            {"error": "Review service unavailable"}, status=502
         )
