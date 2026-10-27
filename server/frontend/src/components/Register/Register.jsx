@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
+import Header from "../Header/Header";
 
 function Register() {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     username: "",
     firstName: "",
@@ -9,48 +12,68 @@ function Register() {
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
 
-  const handleChange = (event) => {
-    setForm({ ...form, [event.target.name]: event.target.value });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    alert("Registration form submitted. Backend registration will be connected next.");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const response = await fetch("/djangoapp/registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Registration failed");
+
+      alert("Registration successful. Please log in.");
+      navigate("/login");
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
-    <main className="register_container">
-      <h1 className="header">Sign-up</h1>
+    <div>
+      <Header />
+      <main className="register_container">
+        <h1 className="header">Sign-up</h1>
+        {error && <p role="alert">{error}</p>}
 
-      <form onSubmit={handleSubmit}>
-        <div className="inputs">
-          <label htmlFor="username">Username</label>
-          <input className="input_field" id="username" name="username"
-            value={form.username} onChange={handleChange} required />
+        <form onSubmit={handleSubmit}>
+          <div className="inputs">
+            <label htmlFor="username">Username</label>
+            <input className="input_field" id="username" name="username"
+              value={form.username} onChange={handleChange} required />
 
-          <label htmlFor="firstName">First Name</label>
-          <input className="input_field" id="firstName" name="firstName"
-            value={form.firstName} onChange={handleChange} required />
+            <label htmlFor="firstName">First Name</label>
+            <input className="input_field" id="firstName" name="firstName"
+              value={form.firstName} onChange={handleChange} required />
 
-          <label htmlFor="lastName">Last Name</label>
-          <input className="input_field" id="lastName" name="lastName"
-            value={form.lastName} onChange={handleChange} required />
+            <label htmlFor="lastName">Last Name</label>
+            <input className="input_field" id="lastName" name="lastName"
+              value={form.lastName} onChange={handleChange} required />
 
-          <label htmlFor="email">Email</label>
-          <input className="input_field" id="email" name="email"
-            type="email" value={form.email} onChange={handleChange} required />
+            <label htmlFor="email">Email</label>
+            <input className="input_field" id="email" name="email" type="email"
+              value={form.email} onChange={handleChange} required />
 
-          <label htmlFor="password">Password</label>
-          <input className="input_field" id="password" name="password"
-            type="password" value={form.password} onChange={handleChange} required />
+            <label htmlFor="password">Password</label>
+            <input className="input_field" id="password" name="password"
+              type="password" value={form.password} onChange={handleChange} required />
 
-          <div className="submit_panel">
             <button className="submit" type="submit">Register</button>
           </div>
-        </div>
-      </form>
-    </main>
+        </form>
+        <p>Already registered? <Link to="/login">Login</Link></p>
+      </main>
+    </div>
   );
 }
 
