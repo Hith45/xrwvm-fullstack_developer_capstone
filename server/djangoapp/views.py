@@ -82,3 +82,20 @@ def get_dealer_reviews(request, dealer_id):
             {"error": "Could not retrieve dealer reviews"},
             status=502
         )
+@csrf_exempt
+def getalldealers(request):
+    import requests
+
+    try:
+        response = requests.get(
+            "http://127.0.0.1:3030/fetchDealers",
+            timeout=10
+        )
+        response.raise_for_status()
+        return JsonResponse(response.json(), safe=False)
+    except requests.RequestException as error:
+        logger.error("Failed to retrieve dealerships: %s", error)
+        return JsonResponse(
+            {"error": "Could not retrieve dealerships"},
+            status=502
+        )

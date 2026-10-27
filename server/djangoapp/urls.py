@@ -13,4 +13,5 @@ urlpatterns = [
         views.get_dealer_reviews,
         name='get_dealer_reviews'
     ),
+    path('getalldealers', views.getalldealers, name='getalldealers'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
