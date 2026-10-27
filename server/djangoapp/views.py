@@ -9,14 +9,18 @@
 # from datetime import datetime
 
 from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 import logging
 import json
 from django.views.decorators.csrf import csrf_exempt
 # from .populate import initiate
 
-
+@csrf_exempt
+def logout_request(request):
+    logout(request)
+    return JsonResponse({"status": "Logged out"})
 # Get an instance of a logger
+
 logger = logging.getLogger(__name__)
 
 

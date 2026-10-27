@@ -1,0 +1,16 @@
+$ curl -i -b cookies.txt -c cookies.txt -X POST http://127.0.0.1:8000/djangoapp/logout
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    24  100    24    0     0   3378      0 --:--:-- --:--:-- --:--:--  3428
+HTTP/1.1 200 OK
+Date: Tue, 27 Oct 2026 13:47:09 GMT
+Server: WSGIServer/0.2 CPython/3.14.6
+Content-Type: application/json
+X-Frame-Options: DENY
+Content-Length: 24
+Vary: Cookie
+X-Content-Type-Options: nosniff
+Referrer-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin
+
+{"status": "Logged out"}
