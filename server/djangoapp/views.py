@@ -116,3 +116,20 @@ def getdealerbyid(request, dealer_id):
     except requests.RequestException as error:
         logger.error("Failed to retrieve dealer: %s", error)
         return JsonResponse({"error": "Could not retrieve dealer"}, status=502)
+@csrf_exempt
+def getdealersbystate(request, state):
+    import requests
+
+    try:
+        response = requests.get(
+            f"http://127.0.0.1:3030/fetchDealers/{state}",
+            timeout=10
+        )
+        response.raise_for_status()
+        return JsonResponse(response.json(), safe=False)
+    except requests.RequestException as error:
+        logger.error("Failed to retrieve dealerships by state: %s", error)
+        return JsonResponse(
+            {"error": "Could not retrieve dealerships"},
+            status=502
+        )
